@@ -48,8 +48,7 @@ if uploaded_file is not None:
     # Convert single channel to 3-channel RGB
     paint_by_numbers_img = cv2.cvtColor(edges_inv, cv2.COLOR_GRAY2RGB)
 
-    # Add numbers to the regions
-    # Find the contours and add numbers
+    # Add bold blue numbers to the regions
     contours, _ = cv2.findContours(edges_inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     numbered_img = paint_by_numbers_img.copy()
     for idx, contour in enumerate(contours):
@@ -59,18 +58,25 @@ if uploaded_file is not None:
             if moments["m00"] != 0:
                 cx = int(moments["m10"] / moments["m00"])
                 cy = int(moments["m01"] / moments["m00"])
-                # Add the number to the region
-                cv2.putText(numbered_img, str(idx + 1), (cx - 10, cy + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                # Add the number to the region with blue color and bold font
+                cv2.putText(numbered_img, 
+                            str(idx + 1),  # Number to display
+                            (cx - 10, cy + 10),  # Position of the number (center of the contour)
+                            cv2.FONT_HERSHEY_SIMPLEX,  # Font
+                            1,  # Font scale
+                            (255, 0, 0),  # Blue color (BGR format)
+                            3,  # Thickness (boldness)
+                            cv2.LINE_AA)  # Anti-aliasing for smoother text
 
     # Display result
-    st.image(numbered_img, caption="🖼️ Final Paint-by-Numbers Template", use_container_width=True)
+    st.image(numbered_img, caption="🖼️ Final Paint-by-Numbers Template with Numbers", use_container_width=True)
 
     # Download button
     result_image = Image.fromarray(numbered_img)
     buf = BytesIO()
     result_image.save(buf, format="PNG")
     byte_im = buf.getvalue()
-    st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers_outlines.png", mime="image/png")
+    st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers_outlines_with_numbers.png", mime="image/png")
 
     # User painting functionality (basic version):
     st.markdown("### Paint the Numbers! (Click on a region to fill with color)")
