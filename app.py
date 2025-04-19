@@ -80,10 +80,10 @@ if uploaded_file is not None:
         # Find all pixel indices that belong to the current cluster
         cluster_indices = np.where(kmeans.labels_ == i)
 
-        # Check if cluster_indices are valid
-        if len(cluster_indices[0]) > 0:  # Check if the cluster has any valid indices
-            # Get the row and column indices separately
-            row_indices, col_indices = cluster_indices
+        # Check if cluster_indices are valid (ensure that the tuple contains valid indices)
+        if len(cluster_indices[0]) > 0:  # Ensure the cluster has valid row and column indices
+            row_indices = cluster_indices[0]  # row indices (vertical positions)
+            col_indices = cluster_indices[1]  # column indices (horizontal positions)
             
             # Calculate the centroid of the cluster (mean of x and y coordinates of the pixels)
             region_x = np.mean(col_indices)  # x-coordinates (columns)
