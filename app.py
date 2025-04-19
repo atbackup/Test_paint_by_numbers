@@ -37,4 +37,7 @@ if uploaded_file is not None:
 
     # Download link
     buf = BytesIO()
-    bw_img.save_
+    bw_img.save(buf, format="PNG")  # ✅ This is the correct line
+    byte_im = buf.getvalue()
+    st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers.png", mime="image/png")
+
