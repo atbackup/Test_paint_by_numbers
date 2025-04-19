@@ -83,11 +83,15 @@ if uploaded_file is not None:
         # Debugging: Let's check the structure of cluster_indices
         st.write(f"Cluster {i} indices: {cluster_indices}")
         
+        # Extract the row and column indices from the tuple
+        row_indices = cluster_indices[0]
+        col_indices = cluster_indices[1]
+        
         # Check that both row and column indices are valid (i.e., not empty)
-        if len(cluster_indices[0]) > 0 and len(cluster_indices[1]) > 0:
+        if len(row_indices) > 0 and len(col_indices) > 0:
             # Calculate the centroid of the cluster (mean of x and y coordinates of the pixels)
-            region_x = np.mean(cluster_indices[1])  # x-coordinates (columns)
-            region_y = np.mean(cluster_indices[0])  # y-coordinates (rows)
+            region_x = np.mean(col_indices)  # x-coordinates (columns)
+            region_y = np.mean(row_indices)  # y-coordinates (rows)
 
             # Add number to the image with a small shadow for contrast
             draw.text((region_x + 1, region_y + 1), str(i + 1), fill=(255, 255, 255), font=font)  # shadow
