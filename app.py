@@ -49,17 +49,17 @@ if uploaded_file is not None:
     paint_by_numbers_img = cv2.cvtColor(edges_inv, cv2.COLOR_GRAY2RGB)
 
     # Add bold blue numbers to the regions
-contours, _ = cv2.findContours(edges_inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-numbered_img = paint_by_numbers_img.copy()
+    contours, _ = cv2.findContours(edges_inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    numbered_img = paint_by_numbers_img.copy()
 
-st.write(f"Detected {len(contours)} color regions")
+    st.write(f"Detected {len(contours)} color regions")
 
-font = cv2.FONT_HERSHEY_SIMPLEX
-font_scale = 0.6
-font_thickness = 2
-font_color = (0, 0, 255)  # Bright blue in BGR
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.6
+    font_thickness = 2
+    font_color = (0, 0, 255)  # Bright blue in BGR
 
-for idx, contour in enumerate(contours):
+    for idx, contour in enumerate(contours):
     area = cv2.contourArea(contour)
     if area > 20:  # Lowered threshold to catch more regions
         M = cv2.moments(contour)
@@ -76,6 +76,7 @@ for idx, contour in enumerate(contours):
             text_y = cy + text_height // 2
 
             cv2.putText(numbered_img, text, (text_x, text_y), font, font_scale, font_color, font_thickness, cv2.LINE_AA)
+
 
     # Display result
     st.image(numbered_img, caption="🖼️ Final Paint-by-Numbers Template with Numbers", use_container_width=True)
