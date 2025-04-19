@@ -60,7 +60,7 @@ if uploaded_file is not None:
     font_color = (0, 0, 255)  # Bright blue in BGR
 
     for idx, contour in enumerate(contours):
-    area = cv2.contourArea(contour)
+        area = cv2.contourArea(contour)
     if area > 20:  # Lowered threshold to catch more regions
         M = cv2.moments(contour)
         if M["m00"] != 0:
