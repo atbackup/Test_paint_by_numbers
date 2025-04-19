@@ -80,13 +80,20 @@ if uploaded_file is not None:
         # Find all pixel indices that belong to the current cluster
         cluster_indices = np.where(kmeans.labels_ == i)
         
-        # Calculate the centroid of the cluster (mean of x and y coordinates of the pixels)
-        region_x = np.mean(cluster_indices[1])  # x-coordinates (columns)
-        region_y = np.mean(cluster_indices[0])  # y-coordinates (rows)
+        # Debugging: Let's check the structure of cluster_indices
+        st.write(f"Cluster {i} indices: {cluster_indices}")
+        
+        # Check that the cluster_indices are not empty and are structured properly
+        if len(cluster_indices) == 2:
+            # Calculate the centroid of the cluster (mean of x and y coordinates of the pixels)
+            region_x = np.mean(cluster_indices[1])  # x-coordinates (columns)
+            region_y = np.mean(cluster_indices[0])  # y-coordinates (rows)
 
-        # Add number to the image with a small shadow for contrast
-        draw.text((region_x + 1, region_y + 1), str(i + 1), fill=(255, 255, 255), font=font)  # shadow
-        draw.text((region_x, region_y), str(i + 1), fill=(0, 0, 0), font=font)  # main text
+            # Add number to the image with a small shadow for contrast
+            draw.text((region_x + 1, region_y + 1), str(i + 1), fill=(255, 255, 255), font=font)  # shadow
+            draw.text((region_x, region_y), str(i + 1), fill=(0, 0, 0), font=font)  # main text
+        else:
+            st.write(f"Cluster {i} does not have valid indices")
 
     # Show the updated image with numbers
     st.image(bw_img_with_edges, caption="Paint-by-Numbers with Numbers", use_container_width=True)
