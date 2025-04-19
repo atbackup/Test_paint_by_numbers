@@ -8,7 +8,7 @@ import cv2
 st.set_page_config(page_title="Paint by Numbers App")
 
 st.title("🎨 Paint by Numbers App")
-st.markdown("Upload your image and we’ll turn it into a Paint-by-Numbers template with clean outlines. Add colors to paint!")
+st.markdown("Upload your image and we’ll turn it into a Paint-by-Numbers template with clean outlines and blue numbered regions.")
 
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
@@ -36,61 +36,50 @@ if uploaded_file is not None:
     # Convert to grayscale for edge detection
     gray_quantized = cv2.cvtColor(quantized.astype(np.uint8), cv2.COLOR_RGB2GRAY)
 
-    # Apply Gaussian blur (optional) to reduce noise
+    # Apply Gaussian blur to reduce noise
     blurred = cv2.GaussianBlur(gray_quantized, (3, 3), 0)
 
-    # Use Canny edge detection for sharp outlines
+    # Use Canny edge detection for outlines
     edges = cv2.Canny(blurred, 30, 100)
 
     # Invert edges so they appear black on white
     edges_inv = cv2.bitwise_not(edges)
 
     # Convert single channel to 3-channel RGB
-    paint_by_numbers_img = cv2.cvtColor(edges_inv, cv2.COLOR_GRAY2RGB)
+    outline_img = cv2.cvtColor(edges_inv, cv2.COLOR_GRAY2RGB)
 
-    # Add bold blue numbers to the regions
-    contours, _ = cv2.findContours(edges_inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    numbered_img = paint_by_numbers_img.copy()
+    # Create a copy to draw numbers
+    numbered_img = outline_img.copy()
 
-    st.write(f"Detected {len(contours)} color regions")
+    # Find contours on edge image
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     font = cv2.FONT_HERSHEY_SIMPLEX
-    font_scale = 0.6
+    font_scale = 0.5
     font_thickness = 2
-    font_color = (0, 0, 255)  # Bright blue in BGR
+    font_color = (255, 0, 0)  # Blue in BGR
 
     for idx, contour in enumerate(contours):
         area = cv2.contourArea(contour)
-    if area > 20:  # Lowered threshold to catch more regions
-        M = cv2.moments(contour)
-        if M["m00"] != 0:
-            cx = int(M["m10"] / M["m00"])
-            cy = int(M["m01"] / M["m00"])
-            text = str(idx + 1)
+        if area > 20:  # Lower threshold to detect more regions
+            M = cv2.moments(contour)
+            if M["m00"] != 0:
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                text = str(idx + 1)
 
-            # Calculate size of text box
-            (text_width, text_height), _ = cv2.getTextSize(text, font, font_scale, font_thickness)
+                (text_width, text_height), _ = cv2.getTextSize(text, font, font_scale, font_thickness)
+                text_x = cx - text_width // 2
+                text_y = cy + text_height // 2
 
-            # Place text centered
-            text_x = cx - text_width // 2
-            text_y = cy + text_height // 2
-
-            cv2.putText(numbered_img, text, (text_x, text_y), font, font_scale, font_color, font_thickness, cv2.LINE_AA)
-
+                cv2.putText(numbered_img, text, (text_x, text_y), font, font_scale, font_color, font_thickness, cv2.LINE_AA)
 
     # Display result
-    st.image(numbered_img, caption="🖼️ Final Paint-by-Numbers Template with Numbers", use_container_width=True)
+    st.image(numbered_img, caption="🖼️ Numbered Paint-by-Numbers Template", use_container_width=True)
 
     # Download button
     result_image = Image.fromarray(numbered_img)
     buf = BytesIO()
     result_image.save(buf, format="PNG")
     byte_im = buf.getvalue()
-    st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers_outlines_with_numbers.png", mime="image/png")
-
-    # User painting functionality (basic version):
-    st.markdown("### Paint the Numbers! (Click on a region to fill with color)")
-    color = st.color_picker("Pick a color", "#000000")  # Default color is black
-
-    # Placeholder for painting action (this would be enhanced with more complex interaction logic)
-    st.write("Click on the regions to apply your chosen color.")
+    st.download_button("Download Numbered Image", byte_im, file_name="paint_by_numbers_numbered.png", mime="image/png")
