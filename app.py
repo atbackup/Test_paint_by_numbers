@@ -51,6 +51,8 @@ if uploaded_file is not None:
     # Add bold blue numbers to the regions
     contours, _ = cv2.findContours(edges_inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     numbered_img = paint_by_numbers_img.copy()
+
+    # Iterate through contours and add numbers to each region
     for idx, contour in enumerate(contours):
         if cv2.contourArea(contour) > 100:  # Avoid very small contours
             # Find the center of the contour
@@ -58,6 +60,7 @@ if uploaded_file is not None:
             if moments["m00"] != 0:
                 cx = int(moments["m10"] / moments["m00"])
                 cy = int(moments["m01"] / moments["m00"])
+                
                 # Add the number to the region with blue color and bold font
                 cv2.putText(numbered_img, 
                             str(idx + 1),  # Number to display
