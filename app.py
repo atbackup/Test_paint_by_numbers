@@ -17,7 +17,7 @@ if uploaded_file is not None:
     image = Image.open(uploaded_file).convert("RGB")
     st.image(image, caption="Original Image", use_container_width=True)
 
-    # Choose number of color areas
+    # Choose number of color levels
     num_colors = st.slider("Choose number of color areas", 2, 10, 5)
 
     # Resize image for performance
@@ -37,19 +37,16 @@ if uploaded_file is not None:
     gray_quantized = cv2.cvtColor(quantized.astype(np.uint8), cv2.COLOR_RGB2GRAY)
 
     # Apply Gaussian blur (optional) to reduce noise
-    blurred = cv2.GaussianBlur(gray_quantized, (5, 5), 1)
+    blurred = cv2.GaussianBlur(gray_quantized, (3, 3), 0)
 
     # Use Canny edge detection for sharp outlines
-    edges = cv2.Canny(blurred, 50, 150)  # Adjust these values for sharper edges
+    edges = cv2.Canny(blurred, 30, 100)
 
     # Invert edges so they appear black on white
     edges_inv = cv2.bitwise_not(edges)
 
-    # Convert single channel to 3-channel RGB (white background, black outlines)
+    # Convert single channel to 3-channel RGB
     paint_by_numbers_img = cv2.cvtColor(edges_inv, cv2.COLOR_GRAY2RGB)
-
-    # Set the background to white (just in case it's not pure white)
-    paint_by_numbers_img[paint_by_numbers_img == 0] = 255
 
     # Display result
     st.image(paint_by_numbers_img, caption="🖼️ Final Paint-by-Numbers Outline", use_container_width=True)
@@ -60,3 +57,5 @@ if uploaded_file is not None:
     result_image.save(buf, format="PNG")
     byte_im = buf.getvalue()
     st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers_outlines.png", mime="image/png")
+
+
