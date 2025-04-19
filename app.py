@@ -79,15 +79,15 @@ if uploaded_file is not None:
     for i in range(num_colors):
         # Find all pixel indices that belong to the current cluster
         cluster_indices = np.where(kmeans.labels_ == i)
-        
-        # Debugging: Print the structure of cluster_indices to inspect
+
+        # Check the shape of cluster_indices and print it for debugging
         st.write(f"Cluster {i} indices: {cluster_indices}")
-        
-        # Extract the row and column indices from the tuple
+
+        # Check that the cluster_indices contain two arrays (row and column indices)
         if len(cluster_indices) == 2:
             row_indices, col_indices = cluster_indices  # Unpack directly into row and col
             
-            # Check that both row and column indices are valid (i.e., not empty)
+            # Ensure there are valid row and column indices before proceeding
             if len(row_indices) > 0 and len(col_indices) > 0:
                 # Calculate the centroid of the cluster (mean of x and y coordinates of the pixels)
                 region_x = np.mean(col_indices)  # x-coordinates (columns)
