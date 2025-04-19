@@ -49,30 +49,33 @@ if uploaded_file is not None:
     paint_by_numbers_img = cv2.cvtColor(edges_inv, cv2.COLOR_GRAY2RGB)
 
     # Add bold blue numbers to the regions
-    contours, _ = cv2.findContours(edges_inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    numbered_img = paint_by_numbers_img.copy()
+contours, _ = cv2.findContours(edges_inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+numbered_img = paint_by_numbers_img.copy()
 
-    # Debug: Print contour details
-    st.write(f"Number of contours detected: {len(contours)}")
+st.write(f"Detected {len(contours)} color regions")
 
-    # Iterate through contours and add numbers to each region
-    for idx, contour in enumerate(contours):
-        if cv2.contourArea(contour) > 100:  # Avoid very small contours
-            # Find the center of the contour
-            moments = cv2.moments(contour)
-            if moments["m00"] != 0:
-                cx = int(moments["m10"] / moments["m00"])
-                cy = int(moments["m01"] / moments["m00"])
-                
-                # Add the number to the region with bold blue color
-                cv2.putText(numbered_img, 
-                            str(idx + 1),  # Number to display
-                            (cx - 10, cy + 10),  # Position of the number (center of the contour)
-                            cv2.FONT_HERSHEY_SIMPLEX,  # Font
-                            1,  # Font scale
-                            (0, 0, 255),  # Blue color (BGR format)
-                            3,  # Thickness (boldness)
-                            cv2.LINE_AA)  # Anti-aliasing for smoother text
+font = cv2.FONT_HERSHEY_SIMPLEX
+font_scale = 0.6
+font_thickness = 2
+font_color = (0, 0, 255)  # Bright blue in BGR
+
+for idx, contour in enumerate(contours):
+    area = cv2.contourArea(contour)
+    if area > 20:  # Lowered threshold to catch more regions
+        M = cv2.moments(contour)
+        if M["m00"] != 0:
+            cx = int(M["m10"] / M["m00"])
+            cy = int(M["m01"] / M["m00"])
+            text = str(idx + 1)
+
+            # Calculate size of text box
+            (text_width, text_height), _ = cv2.getTextSize(text, font, font_scale, font_thickness)
+
+            # Place text centered
+            text_x = cx - text_width // 2
+            text_y = cy + text_height // 2
+
+            cv2.putText(numbered_img, text, (text_x, text_y), font, font_scale, font_color, font_thickness, cv2.LINE_AA)
 
     # Display result
     st.image(numbered_img, caption="🖼️ Final Paint-by-Numbers Template with Numbers", use_container_width=True)
