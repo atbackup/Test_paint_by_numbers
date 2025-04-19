@@ -1,64 +1,59 @@
 import streamlit as st
-from PIL import Image, ImageOps
+from PIL import Image
 import numpy as np
 from io import BytesIO
 from sklearn.cluster import KMeans
-import cv2  # OpenCV for edge detection
+import cv2
 
 st.set_page_config(page_title="Paint by Numbers App")
 
 st.title("🎨 Paint by Numbers App")
-st.markdown("Upload your image and we’ll turn it into a Paint-by-Numbers template.")
+st.markdown("Upload your image and we’ll turn it into a Paint-by-Numbers template with clean outlines.")
 
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     # Load and display original image
-    image = Image.open(uploaded_file)
+    image = Image.open(uploaded_file).convert("RGB")
     st.image(image, caption="Original Image", use_container_width=True)
 
-    # Choose color levels
-    num_colors = st.slider("Choose number of color levels", min_value=2, max_value=10, value=5)
+    # Choose number of color levels
+    num_colors = st.slider("Choose number of color areas", 2, 10, 5)
 
-    # Resize for speed
+    # Resize image for performance
     image = image.resize((256, 256))
-
-    # Convert to numpy array
     img_array = np.array(image)
 
-    # Color quantization with KMeans
-    img_reshaped = img_array.reshape((-1, 3))
-    kmeans = KMeans(n_clusters=num_colors, random_state=42)
-    kmeans.fit(img_reshaped)
-    new_colors = kmeans.cluster_centers_.astype(int)
-    quantized_img_reshaped = new_colors[kmeans.labels_]
-    quantized_img = quantized_img_reshaped.reshape(img_array.shape)
-    quantized_image = Image.fromarray(quantized_img.astype(np.uint8))
-    st.image(quantized_image, caption="Paint-by-Numbers Style", use_container_width=True)
+    # Color quantization using KMeans
+    pixels = img_array.reshape(-1, 3)
+    kmeans = KMeans(n_clusters=num_colors, random_state=0).fit(pixels)
+    new_colors = kmeans.cluster_centers_.astype(np.uint8)
+    labels = kmeans.labels_
 
-    # Use OpenCV for edge detection (Canny)
-    gray_for_edges = cv2.cvtColor(quantized_img.astype(np.uint8), cv2.COLOR_RGB2GRAY)
-    edges = cv2.Canny(gray_for_edges, threshold1=50, threshold2=150)
+    # Reconstruct quantized image
+    quantized = new_colors[labels].reshape(img_array.shape)
 
-    # Invert edges (white background, black lines → we want black on white)
+    # Convert to grayscale for edge detection
+    gray_quantized = cv2.cvtColor(quantized.astype(np.uint8), cv2.COLOR_RGB2GRAY)
+
+    # Apply Gaussian blur (optional) to reduce noise
+    blurred = cv2.GaussianBlur(gray_quantized, (3, 3), 0)
+
+    # Use Canny edge detection for sharp outlines
+    edges = cv2.Canny(blurred, 30, 100)
+
+    # Invert edges so they appear black on white
     edges_inv = cv2.bitwise_not(edges)
 
-    # Convert edge mask to 3 channels and overlay on white background
-    white_bg = np.ones_like(img_array, dtype=np.uint8) * 255
-    edges_3ch = cv2.cvtColor(edges_inv, cv2.COLOR_GRAY2RGB)
-    outlined_img = cv2.bitwise_and(white_bg, edges_3ch)
+    # Convert single channel to 3-channel RGB
+    paint_by_numbers_img = cv2.cvtColor(edges_inv, cv2.COLOR_GRAY2RGB)
 
-    # Merge with quantized image: blend edges into the quantized image
-    outline_mask = edges > 0
-    final_image = quantized_img.copy()
-    final_image[outline_mask] = 0  # black lines
+    # Display result
+    st.image(paint_by_numbers_img, caption="🖼️ Final Paint-by-Numbers Outline", use_container_width=True)
 
-    # Convert final image to PIL and display
-    final_pil = Image.fromarray(final_image.astype(np.uint8))
-    st.image(final_pil, caption="Final Paint-by-Numbers with Outlines", use_container_width=True)
-
-    # Download
+    # Download button
+    result_image = Image.fromarray(paint_by_numbers_img)
     buf = BytesIO()
-    final_pil.save(buf, format="PNG")
+    result_image.save(buf, format="PNG")
     byte_im = buf.getvalue()
-    st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers.png", mime="image/png")
+    st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers_outlines.png", mime="image/png")
