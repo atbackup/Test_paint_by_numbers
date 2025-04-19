@@ -43,4 +43,14 @@ if uploaded_file is not None:
     quantized_image = Image.fromarray(quantized_img.astype(np.uint8))
 
     # Display the quantized image (paint-by-numbers style)
-    st.image(quantized_image, caption="Paint-by-Numbers Style", use_container_width_
+    st.image(quantized_image, caption="Paint-by-Numbers Style", use_container_width=True)
+
+    # Convert the quantized image to a grayscale version for the outlines
+    gray_image = ImageOps.grayscale(quantized_image)
+    st.image(gray_image, caption="Grayscale Image for Outlines", use_container_width=True)
+
+    # Download link for the paint-by-numbers image
+    buf = BytesIO()
+    quantized_image.save(buf, format="PNG")
+    byte_im = buf.getvalue()
+    st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers.png", mime="image/png")
