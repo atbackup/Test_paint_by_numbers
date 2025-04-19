@@ -1,5 +1,5 @@
 import streamlit as st
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageEnhance
 import numpy as np
 from io import BytesIO
 from sklearn.cluster import KMeans  # Import KMeans for color quantization
@@ -62,16 +62,21 @@ if uploaded_file is not None:
     # Convert back to an image
     edges_image = Image.fromarray(edges)
 
-    # Display grayscale and edge-detected images
-    st.image(gray_image, caption="Grayscale Image", use_container_width=True)
-    st.image(edges_image, caption="Edge Detected Image", use_container_width=True)
+    # Enhance the edge contrast
+    edges_enhanced = ImageEnhance.Contrast(edges_image).enhance(3)  # Boost contrast
+    edges_enhanced = edges_enhanced.convert('1')  # Convert to binary black & white
 
-    # Overlay the edges on the paint-by-numbers image (quantized_image)
-    bw_img_with_edges = Image.composite(quantized_image.convert('L'), edges_image.convert('L'), edges_image)
-    st.image(bw_img_with_edges, caption="Paint-by-Numbers with Edges", use_container_width=True)
+    # Create a white background image
+    white_bg = Image.new('L', edges_enhanced.size, 255)  # 255 = white
+
+    # Composite: draw black edges on white background
+    final_overlay = Image.composite(Image.new('L', edges_enhanced.size, 0), white_bg, edges_enhanced)
+
+    # Display the enhanced edge image with white background
+    st.image(final_overlay, caption="Paint-by-Numbers with Enhanced Edges on White Background", use_container_width=True)
 
     # Download link for the paint-by-numbers image
     buf = BytesIO()
-    bw_img_with_edges.save(buf, format="PNG")
+    final_overlay.save(buf, format="PNG")
     byte_im = buf.getvalue()
     st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers.png", mime="image/png")
