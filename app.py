@@ -52,6 +52,9 @@ if uploaded_file is not None:
     contours, _ = cv2.findContours(edges_inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     numbered_img = paint_by_numbers_img.copy()
 
+    # Debug: Print contour details
+    st.write(f"Number of contours detected: {len(contours)}")
+
     # Iterate through contours and add numbers to each region
     for idx, contour in enumerate(contours):
         if cv2.contourArea(contour) > 100:  # Avoid very small contours
@@ -86,4 +89,4 @@ if uploaded_file is not None:
     color = st.color_picker("Pick a color", "#000000")  # Default color is black
 
     # Placeholder for painting action (this would be enhanced with more complex interaction logic)
-    st.write("Just a placeholder")
+    st.write("Click on the regions to apply your chosen color.")
