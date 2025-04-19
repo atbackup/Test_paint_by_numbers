@@ -15,6 +15,9 @@ if uploaded_file is not None:
     image = Image.open(uploaded_file)
     st.image(image, caption="Original Image", use_container_width=True)
 
+    # Let the user choose the number of color levels
+    num_colors = st.slider("Choose number of color levels", min_value=2, max_value=10, value=5)
+
     # Resize for speed
     image = image.resize((256, 256))
     
