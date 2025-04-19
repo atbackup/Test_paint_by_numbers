@@ -76,7 +76,7 @@ if uploaded_file is not None:
     width, height = bw_img_with_edges.size
     
     # Loop over each cluster (color region)
-    for i, center in enumerate(new_colors):
+    for i in range(num_colors):
         # Find all pixel indices that belong to the current cluster
         cluster_indices = np.where(kmeans.labels_ == i)
         
