@@ -80,24 +80,27 @@ if uploaded_file is not None:
         # Find all pixel indices that belong to the current cluster
         cluster_indices = np.where(kmeans.labels_ == i)
         
-        # Debugging: Let's check the structure of cluster_indices
+        # Debugging: Print the structure of cluster_indices to inspect
         st.write(f"Cluster {i} indices: {cluster_indices}")
         
         # Extract the row and column indices from the tuple
-        row_indices = cluster_indices[0]
-        col_indices = cluster_indices[1]
+        if len(cluster_indices) == 2:
+            row_indices = cluster_indices[0]
+            col_indices = cluster_indices[1]
         
-        # Check that both row and column indices are valid (i.e., not empty)
-        if len(row_indices) > 0 and len(col_indices) > 0:
-            # Calculate the centroid of the cluster (mean of x and y coordinates of the pixels)
-            region_x = np.mean(col_indices)  # x-coordinates (columns)
-            region_y = np.mean(row_indices)  # y-coordinates (rows)
+            # Check that both row and column indices are valid (i.e., not empty)
+            if len(row_indices) > 0 and len(col_indices) > 0:
+                # Calculate the centroid of the cluster (mean of x and y coordinates of the pixels)
+                region_x = np.mean(col_indices)  # x-coordinates (columns)
+                region_y = np.mean(row_indices)  # y-coordinates (rows)
 
-            # Add number to the image with a small shadow for contrast
-            draw.text((region_x + 1, region_y + 1), str(i + 1), fill=(255, 255, 255), font=font)  # shadow
-            draw.text((region_x, region_y), str(i + 1), fill=(0, 0, 0), font=font)  # main text
+                # Add number to the image with a small shadow for contrast
+                draw.text((region_x + 1, region_y + 1), str(i + 1), fill=(255, 255, 255), font=font)  # shadow
+                draw.text((region_x, region_y), str(i + 1), fill=(0, 0, 0), font=font)  # main text
+            else:
+                st.write(f"Cluster {i} has no valid indices")
         else:
-            st.write(f"Cluster {i} has no valid indices")
+            st.write(f"Cluster {i} has invalid structure")
 
     # Show the updated image with numbers
     st.image(bw_img_with_edges, caption="Paint-by-Numbers with Numbers", use_container_width=True)
