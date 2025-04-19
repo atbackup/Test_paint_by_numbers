@@ -4,8 +4,6 @@ import numpy as np
 from io import BytesIO
 from sklearn.cluster import KMeans  # Import KMeans for color quantization
 from skimage import filters
-from skimage import color
-from skimage import segmentation
 import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Paint by Numbers App")
@@ -50,31 +48,30 @@ if uploaded_file is not None:
     st.image(quantized_image, caption="Paint-by-Numbers Style", use_container_width=True)
 
     # Convert to grayscale
-gray_image = ImageOps.grayscale(image)
+    gray_image = ImageOps.grayscale(image)
 
-# Convert to numpy array
-gray_array = np.array(gray_image)
+    # Convert to numpy array
+    gray_array = np.array(gray_image)
 
-# Apply Sobel filter to detect edges
-edges = filters.sobel(gray_array)
+    # Apply Sobel filter to detect edges
+    edges = filters.sobel(gray_array)
 
-# Normalize edge values (edges are between 0 and 1)
-edges = (edges * 255).astype(np.uint8)
+    # Normalize edge values (edges are between 0 and 1)
+    edges = (edges * 255).astype(np.uint8)
 
-# Convert back to an image
-edges_image = Image.fromarray(edges)
+    # Convert back to an image
+    edges_image = Image.fromarray(edges)
 
-st.image(image, caption="Original Image", use_container_width=True)
-st.image(gray_image, caption="Grayscale Image", use_container_width=True)
-st.image(edges_image, caption="Edge Detected Image", use_container_width=True)
+    # Display grayscale and edge-detected images
+    st.image(gray_image, caption="Grayscale Image", use_container_width=True)
+    st.image(edges_image, caption="Edge Detected Image", use_container_width=True)
 
-# Overlay the edges on the paint-by-numbers image (bw_img)
-bw_img_with_edges = Image.composite(bw_img, edges_image.convert('L'), edges_image)
-st.image(bw_img_with_edges, caption="Paint-by-Numbers with Edges", use_container_width=True)
-
+    # Overlay the edges on the paint-by-numbers image (quantized_image)
+    bw_img_with_edges = Image.composite(quantized_image.convert('L'), edges_image.convert('L'), edges_image)
+    st.image(bw_img_with_edges, caption="Paint-by-Numbers with Edges", use_container_width=True)
 
     # Download link for the paint-by-numbers image
     buf = BytesIO()
-    quantized_image.save(buf, format="PNG")
+    bw_img_with_edges.save(buf, format="PNG")
     byte_im = buf.getvalue()
     st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers.png", mime="image/png")
