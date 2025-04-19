@@ -36,7 +36,12 @@ if uploaded_file is not None:
     # Edge detection to create outlines (using Sobel filter)
     edges = sobel(img_array)  # Get edges using Sobel filter
     edges = (edges * 255).astype(np.uint8)  # Convert to 0-255 range
-    edge_img = Image.fromarray(edges)
+
+    # Invert the edges so the lines become white on a dark background
+    inverted_edges = np.invert(edges)  # Invert to make edges white
+
+    # Convert back to image
+    edge_img = Image.fromarray(inverted_edges)
 
     # Display edges and paint-by-numbers image with outlines
     st.image(edge_img, caption="Outline (Edge Detection)", use_container_width=True)
