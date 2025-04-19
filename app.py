@@ -77,12 +77,12 @@ if uploaded_file is not None:
     
     # Loop over each cluster (color region)
     for i, center in enumerate(new_colors):
-        # Calculate the position for the number (center of the cluster region)
-        region_x, region_y = np.mean(np.where(kmeans.labels_ == i), axis=1)
+        # Find all pixel indices that belong to the current cluster
+        cluster_indices = np.where(kmeans.labels_ == i)
         
-        # Convert to image coordinates
-        region_x = int(region_x)
-        region_y = int(region_y)
+        # Calculate the centroid of the cluster (mean of x and y coordinates of the pixels)
+        region_x = np.mean(cluster_indices[1])  # x-coordinates (columns)
+        region_y = np.mean(cluster_indices[0])  # y-coordinates (rows)
 
         # Add number to the image with a small shadow for contrast
         draw.text((region_x + 1, region_y + 1), str(i + 1), fill=(255, 255, 255), font=font)  # shadow
