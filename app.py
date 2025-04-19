@@ -1,8 +1,8 @@
 import streamlit as st
-from PIL import Image
+from PIL import Image, ImageOps
 import numpy as np
-from sklearn.cluster import KMeans
 from io import BytesIO
+from sklearn.cluster import KMeans  # Import KMeans for color quantization
 
 st.set_page_config(page_title="Paint by Numbers App")
 
@@ -10,25 +10,6 @@ st.title("🎨 Paint by Numbers App")
 st.markdown("Upload your image and we’ll turn it into a Paint-by-Numbers template.")
 
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
-
-def quantize_image(image, n_colors):
-    # Convert the image to a NumPy array
-    img_array = np.array(image)
-    
-    # Reshape the image to a 2D array of pixels
-    pixels = img_array.reshape(-1, 3)
-    
-    # Apply KMeans clustering for color quantization
-    kmeans = KMeans(n_clusters=n_colors, random_state=42)
-    kmeans.fit(pixels)
-    
-    # Get the quantized colors
-    quantized_pixels = kmeans.cluster_centers_[kmeans.labels_].astype(int)
-    
-    # Reshape the pixels back to the original image shape
-    quantized_img = quantized_pixels.reshape(img_array.shape)
-    
-    return Image.fromarray(quantized_img.astype(np.uint8))
 
 if uploaded_file is not None:
     # Load and display original image
@@ -41,12 +22,25 @@ if uploaded_file is not None:
     # Resize for speed
     image = image.resize((256, 256))
 
-    # Apply color quantization
-    quantized_image = quantize_image(image, num_colors)
-    st.image(quantized_image, caption="Paint-by-Numbers Style", use_container_width=True)
+    # Convert the image to a numpy array
+    img_array = np.array(image)
 
-    # Download link
-    buf = BytesIO()
-    quantized_image.save(buf, format="PNG")
-    byte_im = buf.getvalue()
-    st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers.png", mime="image/png")
+    # Reshape the image into a 2D array of pixels
+    img_reshaped = img_array.reshape((-1, 3))
+
+    # Perform KMeans clustering on the image's pixels to reduce colors
+    kmeans = KMeans(n_clusters=num_colors, random_state=42)
+    kmeans.fit(img_reshaped)
+    
+    # Get the cluster centers (the colors to be used in the quantized image)
+    new_colors = kmeans.cluster_centers_.astype(int)
+
+    # Replace each pixel with its corresponding cluster center (the color)
+    quantized_img_reshaped = new_colors[kmeans.labels_]
+    quantized_img = quantized_img_reshaped.reshape(img_array.shape)
+
+    # Convert the quantized image back to a PIL image
+    quantized_image = Image.fromarray(quantized_img.astype(np.uint8))
+
+    # Display the quantized image (paint-by-numbers style)
+    st.image(quantized_image, caption="Paint-by-Numbers Style", use_container_width_
