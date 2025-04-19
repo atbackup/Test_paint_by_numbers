@@ -2,6 +2,7 @@ import streamlit as st
 from PIL import Image, ImageOps
 import numpy as np
 from io import BytesIO
+from skimage.filters import sobel  # Import Sobel filter for edge detection
 
 st.set_page_config(page_title="Paint by Numbers App")
 
@@ -32,12 +33,17 @@ if uploaded_file is not None:
     quantized = (img_array // step) * step  # Reduce grayscale levels
     bw_img = Image.fromarray(quantized)
 
-    # Show final paint-by-numbers image
+    # Edge detection to create outlines (using Sobel filter)
+    edges = sobel(img_array)  # Get edges using Sobel filter
+    edges = (edges * 255).astype(np.uint8)  # Convert to 0-255 range
+    edge_img = Image.fromarray(edges)
+
+    # Display edges and paint-by-numbers image with outlines
+    st.image(edge_img, caption="Outline (Edge Detection)", use_container_width=True)
     st.image(bw_img, caption=f"Paint-by-Numbers Style with {num_colors} Levels", use_container_width=True)
 
-    # Download link
+    # Download link for the final image with outlines
     buf = BytesIO()
-    bw_img.save(buf, format="PNG")  # ✅ This is the correct line
+    bw_img.save(buf, format="PNG")
     byte_im = buf.getvalue()
-    st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers.png", mime="image/png")
-
+    st.download_button("Download Paint-by-Numbers Image with Outlines", byte_im, file_name="paint_by_numbers_with_outlines.png", mime="image/png")
