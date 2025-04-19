@@ -61,13 +61,13 @@ if uploaded_file is not None:
                 cx = int(moments["m10"] / moments["m00"])
                 cy = int(moments["m01"] / moments["m00"])
                 
-                # Add the number to the region with blue color and bold font
+                # Add the number to the region with bold blue color
                 cv2.putText(numbered_img, 
                             str(idx + 1),  # Number to display
                             (cx - 10, cy + 10),  # Position of the number (center of the contour)
                             cv2.FONT_HERSHEY_SIMPLEX,  # Font
                             1,  # Font scale
-                            (255, 0, 0),  # Blue color (BGR format)
+                            (0, 0, 255),  # Blue color (BGR format)
                             3,  # Thickness (boldness)
                             cv2.LINE_AA)  # Anti-aliasing for smoother text
 
@@ -86,4 +86,4 @@ if uploaded_file is not None:
     color = st.color_picker("Pick a color", "#000000")  # Default color is black
 
     # Placeholder for painting action (this would be enhanced with more complex interaction logic)
-    st.write("Click on the regions to apply your chosen color.")
+    st.write("Just a placeholder")
