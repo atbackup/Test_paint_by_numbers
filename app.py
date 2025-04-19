@@ -85,9 +85,8 @@ if uploaded_file is not None:
         
         # Extract the row and column indices from the tuple
         if len(cluster_indices) == 2:
-            row_indices = cluster_indices[0]
-            col_indices = cluster_indices[1]
-        
+            row_indices, col_indices = cluster_indices  # Unpack directly into row and col
+            
             # Check that both row and column indices are valid (i.e., not empty)
             if len(row_indices) > 0 and len(col_indices) > 0:
                 # Calculate the centroid of the cluster (mean of x and y coordinates of the pixels)
