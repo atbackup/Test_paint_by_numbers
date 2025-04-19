@@ -1,54 +1,52 @@
 import streamlit as st
-from PIL import Image, ImageOps
+from PIL import Image
 import numpy as np
+from sklearn.cluster import KMeans
 from io import BytesIO
-from skimage.filters import sobel  # Import Sobel filter for edge detection
 
 st.set_page_config(page_title="Paint by Numbers App")
 
 st.title("🎨 Paint by Numbers App")
 st.markdown("Upload your image and we’ll turn it into a Paint-by-Numbers template.")
 
-# Upload the image
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
+def quantize_image(image, n_colors):
+    # Convert the image to a NumPy array
+    img_array = np.array(image)
+    
+    # Reshape the image to a 2D array of pixels
+    pixels = img_array.reshape(-1, 3)
+    
+    # Apply KMeans clustering for color quantization
+    kmeans = KMeans(n_clusters=n_colors, random_state=42)
+    kmeans.fit(pixels)
+    
+    # Get the quantized colors
+    quantized_pixels = kmeans.cluster_centers_[kmeans.labels_].astype(int)
+    
+    # Reshape the pixels back to the original image shape
+    quantized_img = quantized_pixels.reshape(img_array.shape)
+    
+    return Image.fromarray(quantized_img.astype(np.uint8))
+
 if uploaded_file is not None:
-    # Load and display the original image
+    # Load and display original image
     image = Image.open(uploaded_file)
     st.image(image, caption="Original Image", use_container_width=True)
 
-    # Let the user choose number of color levels
+    # Let the user choose the number of color levels
     num_colors = st.slider("Choose number of color levels", min_value=2, max_value=10, value=5)
 
-    # Resize for faster processing
+    # Resize for speed
     image = image.resize((256, 256))
-    
-    # Convert to grayscale
-    gray_image = ImageOps.grayscale(image)
-    st.image(gray_image, caption="Grayscale Image", use_container_width=True)
 
-    # Convert to numpy and apply quantization using slider value
-    img_array = np.array(gray_image)
-    step = 256 // num_colors
-    quantized = (img_array // step) * step  # Reduce grayscale levels
-    bw_img = Image.fromarray(quantized)
+    # Apply color quantization
+    quantized_image = quantize_image(image, num_colors)
+    st.image(quantized_image, caption="Paint-by-Numbers Style", use_container_width=True)
 
-    # Edge detection to create outlines (using Sobel filter)
-    edges = sobel(img_array)  # Get edges using Sobel filter
-    edges = (edges * 255).astype(np.uint8)  # Convert to 0-255 range
-
-    # Invert the edges so the lines become white on a dark background
-    inverted_edges = np.invert(edges)  # Invert to make edges white
-
-    # Convert back to image
-    edge_img = Image.fromarray(inverted_edges)
-
-    # Display edges and paint-by-numbers image with outlines
-    st.image(edge_img, caption="Outline (Edge Detection)", use_container_width=True)
-    st.image(bw_img, caption=f"Paint-by-Numbers Style with {num_colors} Levels", use_container_width=True)
-
-    # Download link for the final image with outlines
+    # Download link
     buf = BytesIO()
-    bw_img.save(buf, format="PNG")
+    quantized_image.save(buf, format="PNG")
     byte_im = buf.getvalue()
-    st.download_button("Download Paint-by-Numbers Image with Outlines", byte_im, file_name="paint_by_numbers_with_outlines.png", mime="image/png")
+    st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers.png", mime="image/png")
