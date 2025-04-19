@@ -13,20 +13,20 @@ uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 if uploaded_file is not None:
     # Load and display original image
     image = Image.open(uploaded_file)
-    st.image(image, caption="Original Image", use_column_width=True)
+    st.image(image, caption="Original Image", use_container_width=True)
 
     # Resize for speed
     image = image.resize((256, 256))
     
     # Convert to grayscale
     gray_image = ImageOps.grayscale(image)
-    st.image(gray_image, caption="Grayscale Image", use_column_width=True)
+    st.image(gray_image, caption="Grayscale Image", use_container_width=True)
 
     # Convert to numpy and quantize to 5 levels
     img_array = np.array(gray_image)
     quantized = (img_array // 51) * 51  # reduce to ~5 levels
     bw_img = Image.fromarray(quantized)
-    st.image(bw_img, caption="Paint-by-Numbers Style", use_column_width=True)
+    st.image(bw_img, caption="Paint-by-Numbers Style", use_container_width=True)
 
     # Download link
     buf = BytesIO()
