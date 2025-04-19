@@ -53,27 +53,38 @@ if uploaded_file is not None:
     # Convert to numpy array
     gray_array = np.array(gray_image)
 
-    # Apply Sobel filter to detect edges
+    # Apply Sobel filter to detect edges (sharp outlines)
     edges = filters.sobel(gray_array)
 
     # Normalize edge values (edges are between 0 and 1)
     edges = (edges * 255).astype(np.uint8)
 
-    # Convert back to an image
+    # Convert back to an image (sharp outlines)
     edges_image = Image.fromarray(edges)
 
     # Display grayscale and edge-detected images
     st.image(gray_image, caption="Grayscale Image", use_container_width=True)
     st.image(edges_image, caption="Edge Detected Image", use_container_width=True)
 
-    # Overlay the edges on the paint-by-numbers image (quantized_image)
-    bw_img_with_edges = Image.composite(quantized_image.convert('L'), edges_image.convert('L'), edges_image)
-    st.image(bw_img_with_edges, caption="Paint-by-Numbers with Edges", use_container_width=True)
+    # Create a white background image for the final output
+    white_background = Image.new("RGB", quantized_image.size, (255, 255, 255))
+
+    # Overlay the edges on the quantized image (sharp outlines)
+    sharp_outlines_img = Image.composite(quantized_image.convert('L'), edges_image.convert('L'), edges_image)
+    
+    # Convert back to RGB to keep it as a color image
+    sharp_outlines_img = sharp_outlines_img.convert("RGB")
+    
+    # Ensure the background is white while keeping the outlines sharp
+    final_image = Image.composite(sharp_outlines_img, white_background, sharp_outlines_img.convert('L'))
+
+    # Display the final image with sharp outlines and white background
+    st.image(final_image, caption="Paint-by-Numbers with Sharp Outlines", use_container_width=True)
 
     # Adding numbers for each region (adjusted for clarity)
-    draw = ImageDraw.Draw(bw_img_with_edges)
+    draw = ImageDraw.Draw(final_image)
     font = ImageFont.load_default()  # Use default font or choose a larger one
-    width, height = bw_img_with_edges.size
+    width, height = final_image.size
     
     # Loop over each cluster (color region)
     for i in range(num_colors):
@@ -96,10 +107,11 @@ if uploaded_file is not None:
             st.write(f"Cluster {i} has no valid pixels")
 
     # Show the updated image with numbers
-    st.image(bw_img_with_edges, caption="Paint-by-Numbers with Numbers", use_container_width=True)
+    st.image(final_image, caption="Paint-by-Numbers with Numbers", use_container_width=True)
 
     # Download link for the paint-by-numbers image
     buf = BytesIO()
-    bw_img_with_edges.save(buf, format="PNG")
+    final_image.save(buf, format="PNG")
     byte_im = buf.getvalue()
     st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers.png", mime="image/png")
+
