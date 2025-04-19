@@ -8,7 +8,7 @@ import cv2
 st.set_page_config(page_title="Paint by Numbers App")
 
 st.title("🎨 Paint by Numbers App")
-st.markdown("Upload your image and we’ll turn it into a Paint-by-Numbers template with clean outlines.")
+st.markdown("Upload your image and we’ll turn it into a Paint-by-Numbers template with clean outlines. Add colors to paint!")
 
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
@@ -48,14 +48,33 @@ if uploaded_file is not None:
     # Convert single channel to 3-channel RGB
     paint_by_numbers_img = cv2.cvtColor(edges_inv, cv2.COLOR_GRAY2RGB)
 
+    # Add numbers to the regions
+    # Find the contours and add numbers
+    contours, _ = cv2.findContours(edges_inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    numbered_img = paint_by_numbers_img.copy()
+    for idx, contour in enumerate(contours):
+        if cv2.contourArea(contour) > 100:  # Avoid very small contours
+            # Find the center of the contour
+            moments = cv2.moments(contour)
+            if moments["m00"] != 0:
+                cx = int(moments["m10"] / moments["m00"])
+                cy = int(moments["m01"] / moments["m00"])
+                # Add the number to the region
+                cv2.putText(numbered_img, str(idx + 1), (cx - 10, cy + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+
     # Display result
-    st.image(paint_by_numbers_img, caption="🖼️ Final Paint-by-Numbers Outline", use_container_width=True)
+    st.image(numbered_img, caption="🖼️ Final Paint-by-Numbers Template", use_container_width=True)
 
     # Download button
-    result_image = Image.fromarray(paint_by_numbers_img)
+    result_image = Image.fromarray(numbered_img)
     buf = BytesIO()
     result_image.save(buf, format="PNG")
     byte_im = buf.getvalue()
     st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers_outlines.png", mime="image/png")
 
+    # User painting functionality (basic version):
+    st.markdown("### Paint the Numbers! (Click on a region to fill with color)")
+    color = st.color_picker("Pick a color", "#000000")  # Default color is black
 
+    # Placeholder for painting action (this would be enhanced with more complex interaction logic)
+    st.write("Click on the regions to apply your chosen color.")
