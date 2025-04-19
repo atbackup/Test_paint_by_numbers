@@ -1,68 +1,62 @@
-import numpy as np
-from sklearn.cluster import KMeans
-from PIL import Image, ImageDraw, ImageFont
 import streamlit as st
+from PIL import Image
+import numpy as np
+from io import BytesIO
+from sklearn.cluster import KMeans
+import cv2
 
-# Streamlit app title
-st.title("🎨 Paint by Numbers with Edge Enhancement")
+st.set_page_config(page_title="Paint by Numbers App")
 
-# Allow the user to upload an image
+st.title("🎨 Paint by Numbers App")
+st.markdown("Upload your image and we’ll turn it into a Paint-by-Numbers template with clean outlines.")
+
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # Open the uploaded image
-    img = Image.open(uploaded_file).convert('RGB')
-    image_array = np.array(img)
+    # Load and display original image
+    image = Image.open(uploaded_file).convert("RGB")
+    st.image(image, caption="Original Image", use_container_width=True)
 
-    # Number of colors (clusters) you want to use for color quantization
-    num_colors = st.slider("Choose number of color levels", min_value=2, max_value=10, value=5)
+    # Choose number of color areas
+    num_colors = st.slider("Choose number of color areas", 2, 10, 5)
 
-    # Reshaping the image to a 2D array of pixels (each pixel as a row of RGB values)
-    reshaped_image = image_array.reshape((-1, 3))
+    # Resize image for performance
+    image = image.resize((256, 256))
+    img_array = np.array(image)
 
-    # Applying KMeans clustering to quantize the colors
-    kmeans = KMeans(n_clusters=num_colors, random_state=42)
-    kmeans.fit(reshaped_image)
-
-    # Assign each pixel to the nearest cluster
+    # Color quantization using KMeans
+    pixels = img_array.reshape(-1, 3)
+    kmeans = KMeans(n_clusters=num_colors, random_state=0).fit(pixels)
+    new_colors = kmeans.cluster_centers_.astype(np.uint8)
     labels = kmeans.labels_
 
-    # Convert labels back to the image shape
-    segmented_image = kmeans.cluster_centers_[labels].reshape(image_array.shape)
+    # Reconstruct quantized image
+    quantized = new_colors[labels].reshape(img_array.shape)
 
-    # Convert segmented image to a PIL Image
-    seg_img = Image.fromarray(segmented_image.astype('uint8'))
+    # Convert to grayscale for edge detection
+    gray_quantized = cv2.cvtColor(quantized.astype(np.uint8), cv2.COLOR_RGB2GRAY)
 
-    # Create a drawing object
-    draw = ImageDraw.Draw(seg_img)
+    # Apply Gaussian blur (optional) to reduce noise
+    blurred = cv2.GaussianBlur(gray_quantized, (5, 5), 1)
 
-    # Set up font for numbers (ensure this path is correct or use a default one)
-    font = ImageFont.load_default()  # You can load a specific font if necessary
+    # Use Canny edge detection for sharp outlines
+    edges = cv2.Canny(blurred, 50, 150)  # Adjust these values for sharper edges
 
-    # Loop through each cluster and draw numbers
-    for i in range(num_colors):
-        # Get the indices of pixels belonging to this cluster
-        cluster_indices = np.where(kmeans.labels_ == i)
+    # Invert edges so they appear black on white
+    edges_inv = cv2.bitwise_not(edges)
 
-        # Ensure that the cluster has valid pixels
-        if len(cluster_indices[0]) > 0:  # Check if the cluster has valid pixels
-            row_indices = cluster_indices[0]  # row indices (vertical positions)
-            col_indices = cluster_indices[1]  # column indices (horizontal positions)
+    # Convert single channel to 3-channel RGB (white background, black outlines)
+    paint_by_numbers_img = cv2.cvtColor(edges_inv, cv2.COLOR_GRAY2RGB)
 
-            # Calculate the centroid of the cluster (mean of x and y coordinates of the pixels)
-            region_x = np.mean(col_indices)  # x-coordinates (columns)
-            region_y = np.mean(row_indices)  # y-coordinates (rows)
+    # Set the background to white (just in case it's not pure white)
+    paint_by_numbers_img[paint_by_numbers_img == 0] = 255
 
-            # Add number to the image with a small shadow for contrast
-            draw.text((region_x + 1, region_y + 1), str(i + 1), fill=(255, 255, 255), font=font)  # shadow
-            draw.text((region_x, region_y), str(i + 1), fill=(0, 0, 0), font=font)  # main text
-        else:
-            st.write(f"Cluster {i} has no valid pixels.")
+    # Display result
+    st.image(paint_by_numbers_img, caption="🖼️ Final Paint-by-Numbers Outline", use_container_width=True)
 
-    # Show the segmented image with numbers on the Streamlit app
-    st.image(seg_img, caption="Paint-by-Numbers with Numbers", use_column_width=True)
-
-    # Allow user to download the image (optional)
-    img_save_path = "/tmp/paint_by_numbers_image.png"
-    seg_img.save(img_save_path)
-    st.download_button(label="Download Image", data=open(img_save_path, "rb"), file_name="paint_by_numbers_image.png")
+    # Download button
+    result_image = Image.fromarray(paint_by_numbers_img)
+    buf = BytesIO()
+    result_image.save(buf, format="PNG")
+    byte_im = buf.getvalue()
+    st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers_outlines.png", mime="image/png")
