@@ -1,117 +1,62 @@
-import streamlit as st
-from PIL import Image, ImageOps, ImageDraw, ImageFont
 import numpy as np
-from io import BytesIO
 from sklearn.cluster import KMeans
-from skimage import filters
-import matplotlib.pyplot as plt
+from PIL import Image, ImageDraw, ImageFont
+import streamlit as st
 
-st.set_page_config(page_title="Paint by Numbers App")
+# Load your image (assuming it's a grayscale or RGB image)
+# Replace this line with actual image loading
+img = Image.open("your_image.png").convert('RGB')
+image_array = np.array(img)
 
-st.title("🎨 Paint by Numbers App")
-st.markdown("Upload your image and we’ll turn it into a Paint-by-Numbers template.")
+# Number of colors (clusters) you want to use for color quantization
+num_colors = 5  # Example: You can change this to any number of clusters you need
 
-uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+# Reshaping the image to a 2D array of pixels (each pixel as a row of RGB values)
+reshaped_image = image_array.reshape((-1, 3))
 
-if uploaded_file is not None:
-    # Load and display original image
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Original Image", use_container_width=True)
+# Applying KMeans clustering to quantize the colors
+kmeans = KMeans(n_clusters=num_colors, random_state=42)
+kmeans.fit(reshaped_image)
 
-    # Let the user choose the number of color levels
-    num_colors = st.slider("Choose number of color levels", min_value=2, max_value=10, value=5)
+# Assign each pixel to the nearest cluster
+labels = kmeans.labels_
 
-    # Resize for speed
-    image = image.resize((256, 256))
+# Convert labels back to the image shape
+segmented_image = kmeans.cluster_centers_[labels].reshape(image_array.shape)
 
-    # Convert the image to a numpy array
-    img_array = np.array(image)
+# Convert segmented image to a PIL Image
+seg_img = Image.fromarray(segmented_image.astype('uint8'))
 
-    # Reshape the image into a 2D array of pixels
-    img_reshaped = img_array.reshape((-1, 3))
+# Create a drawing object
+draw = ImageDraw.Draw(seg_img)
 
-    # Perform KMeans clustering on the image's pixels to reduce colors
-    kmeans = KMeans(n_clusters=num_colors, random_state=42)
-    kmeans.fit(img_reshaped)
+# Set up font for numbers (ensure this path is correct or use a default one)
+font = ImageFont.load_default()  # You can load a specific font if necessary
+
+# Loop through each cluster and draw numbers
+for i in range(num_colors):
+    # Get the indices of pixels belonging to this cluster
+    cluster_indices = np.where(kmeans.labels_ == i)
+    st.write(f"Cluster {i} indices: {cluster_indices}")
     
-    # Get the cluster centers (the colors to be used in the quantized image)
-    new_colors = kmeans.cluster_centers_.astype(int)
+    if len(cluster_indices[0]) > 0:  # Ensure there are valid pixels in this cluster
+        row_indices = cluster_indices[0]  # row indices (vertical positions)
+        col_indices = cluster_indices[1]  # column indices (horizontal positions)
+        
+        # Calculate the centroid of the cluster (mean of x and y coordinates of the pixels)
+        region_x = np.mean(col_indices)  # x-coordinates (columns)
+        region_y = np.mean(row_indices)  # y-coordinates (rows)
+        
+        # Add number to the image with a small shadow for contrast
+        draw.text((region_x + 1, region_y + 1), str(i + 1), fill=(255, 255, 255), font=font)  # shadow
+        draw.text((region_x, region_y), str(i + 1), fill=(0, 0, 0), font=font)  # main text
+    else:
+        st.write(f"Cluster {i} has no valid pixels.")
 
-    # Replace each pixel with its corresponding cluster center (the color)
-    quantized_img_reshaped = new_colors[kmeans.labels_]
-    quantized_img = quantized_img_reshaped.reshape(img_array.shape)
+# Show the segmented image with numbers on the Streamlit app
+st.image(seg_img, caption="Paint-by-Numbers with Numbers", use_column_width=True)
 
-    # Convert the quantized image back to a PIL image
-    quantized_image = Image.fromarray(quantized_img.astype(np.uint8))
-
-    # Display the quantized image (paint-by-numbers style)
-    st.image(quantized_image, caption="Paint-by-Numbers Style", use_container_width=True)
-
-    # Convert to grayscale
-    gray_image = ImageOps.grayscale(image)
-
-    # Convert to numpy array
-    gray_array = np.array(gray_image)
-
-    # Apply Sobel filter to detect edges (sharp outlines)
-    edges = filters.sobel(gray_array)
-
-    # Normalize edge values (edges are between 0 and 1)
-    edges = (edges * 255).astype(np.uint8)
-
-    # Convert back to an image (sharp outlines)
-    edges_image = Image.fromarray(edges)
-
-    # Display grayscale and edge-detected images
-    st.image(gray_image, caption="Grayscale Image", use_container_width=True)
-    st.image(edges_image, caption="Edge Detected Image", use_container_width=True)
-
-    # Create a white background image for the final output
-    white_background = Image.new("RGB", quantized_image.size, (255, 255, 255))
-
-    # Overlay the edges on the quantized image (sharp outlines)
-    sharp_outlines_img = Image.composite(quantized_image.convert('L'), edges_image.convert('L'), edges_image)
-    
-    # Convert back to RGB to keep it as a color image
-    sharp_outlines_img = sharp_outlines_img.convert("RGB")
-    
-    # Ensure the background is white while keeping the outlines sharp
-    final_image = Image.composite(sharp_outlines_img, white_background, sharp_outlines_img.convert('L'))
-
-    # Display the final image with sharp outlines and white background
-    st.image(final_image, caption="Paint-by-Numbers with Sharp Outlines", use_container_width=True)
-
-    # Adding numbers for each region (adjusted for clarity)
-    draw = ImageDraw.Draw(final_image)
-    font = ImageFont.load_default()  # Use default font or choose a larger one
-    width, height = final_image.size
-    
-    # Loop over each cluster (color region)
-    for i in range(num_colors):
-        # Find all pixel indices that belong to the current cluster
-        cluster_indices = np.where(kmeans.labels_ == i)
-
-        # Check if cluster_indices are valid (ensure that the tuple contains valid indices)
-        if len(cluster_indices[0]) > 0:  # Ensure the cluster has valid row and column indices
-            row_indices = cluster_indices[0]  # row indices (vertical positions)
-            col_indices = cluster_indices[1]  # column indices (horizontal positions)
-            
-            # Calculate the centroid of the cluster (mean of x and y coordinates of the pixels)
-            region_x = np.mean(col_indices)  # x-coordinates (columns)
-            region_y = np.mean(row_indices)  # y-coordinates (rows)
-
-            # Add number to the image with a small shadow for contrast
-            draw.text((region_x + 1, region_y + 1), str(i + 1), fill=(255, 255, 255), font=font)  # shadow
-            draw.text((region_x, region_y), str(i + 1), fill=(0, 0, 0), font=font)  # main text
-        else:
-            st.write(f"Cluster {i} has no valid pixels")
-
-    # Show the updated image with numbers
-    st.image(final_image, caption="Paint-by-Numbers with Numbers", use_container_width=True)
-
-    # Download link for the paint-by-numbers image
-    buf = BytesIO()
-    final_image.save(buf, format="PNG")
-    byte_im = buf.getvalue()
-    st.download_button("Download Paint-by-Numbers Image", byte_im, file_name="paint_by_numbers.png", mime="image/png")
-
+# Allow user to download the image (optional)
+img_save_path = "/tmp/paint_by_numbers_image.png"
+seg_img.save(img_save_path)
+st.download_button(label="Download Image", data=open(img_save_path, "rb"), file_name="paint_by_numbers_image.png")
